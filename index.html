@@ -1,0 +1,463 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>ضربان شو</title>
+<link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;700;900&display=swap" rel="stylesheet">
+<style>
+:root{--c1:#1b1464;--c2:#4b1d8f;--gold:#ffc83d;--blue:#3aa8ff;--ok:#34d399;--bad:#f87171;--card:rgba(255,255,255,.1)}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{font-family:Vazirmatn,Tahoma,sans-serif;color:#fff;background:linear-gradient(160deg,var(--c1),var(--c2));min-height:100vh;padding:env(safe-area-inset-top,0px) 12px env(safe-area-inset-bottom,0px)}
+#app{max-width:480px;margin:0 auto;padding:16px 0 24px;display:flex;flex-direction:column;gap:14px}
+.logo{text-align:center;font-weight:900;font-size:40px;color:var(--gold);text-shadow:0 4px 0 #7a3e00;margin-top:8px}
+.card{background:var(--card);border-radius:18px;padding:14px}
+.bar{display:flex;justify-content:space-between;font-size:15px;font-weight:700;gap:8px;flex-wrap:wrap}
+button{font-family:inherit;border:0;border-radius:16px;color:#1b1464;background:var(--gold);font-weight:900;font-size:17px;padding:13px;cursor:pointer;box-shadow:0 5px 0 #b57f00}
+button:active{transform:translateY(3px);box-shadow:0 2px 0 #b57f00}
+button:disabled{opacity:.4}
+button.alt{background:var(--blue);color:#fff;box-shadow:0 5px 0 #1d6fb0}
+button.red{background:var(--bad);color:#fff;box-shadow:0 5px 0 #a33c3c}
+button.ghost{background:transparent;color:#fff;box-shadow:none;border:2px solid rgba(255,255,255,.4);font-size:15px;padding:10px}
+.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+input{font-family:inherit;width:100%;padding:12px;border-radius:12px;border:0;font-size:16px;text-align:right}
+.stars{font-size:14px;color:var(--gold)}
+.q{font-size:44px;font-weight:900;text-align:center;padding:14px 0;direction:ltr;unicode-bidi:isolate}
+.ans{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.ans button{background:#fff;color:#1b1464;box-shadow:0 5px 0 #b9b9c9;font-size:26px;padding:16px 0}
+.ans button.ok{background:var(--ok);color:#fff;box-shadow:0 5px 0 #15865c}
+.ans button.bad{background:var(--bad);color:#fff;box-shadow:0 5px 0 #a33c3c}
+.fb{text-align:center;font-size:19px;font-weight:900;min-height:30px;margin-top:8px}
+.mascot{width:100%;margin:0 auto;animation:float 2.4s ease-in-out infinite}
+canvas.viz{width:100%;height:110px;display:block}
+.cube{width:100px;height:100px;margin:10px auto;position:relative;transform-style:preserve-3d;animation:spin 8s linear infinite}
+.cube .f{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:58px;border-radius:18px;background:linear-gradient(145deg,#1c1c22,#050507);border:2px solid #d4a24c;box-shadow:0 0 18px #ffb84d66,inset 0 0 20px #ffb84d22}
+.cube .f:nth-child(1){transform:rotateY(0deg) translateZ(50px)}
+.cube .f:nth-child(2){transform:rotateY(90deg) translateZ(50px)}
+.cube .f:nth-child(3){transform:rotateY(180deg) translateZ(50px)}
+.cube .f:nth-child(4){transform:rotateY(270deg) translateZ(50px)}
+@keyframes spin{to{transform:rotateY(360deg)}}
+.mascot.win{animation:jump .6s}
+.mascot.lose{animation:shake .5s}
+@keyframes float{50%{transform:translateY(-8px) rotateY(12deg)}}
+@keyframes jump{30%{transform:translateY(-30px) scale(1.15)}}
+@keyframes shake{20%,60%{transform:translateX(-10px)}40%,80%{transform:translateX(10px)}}
+.timer{height:10px;background:rgba(255,255,255,.2);border-radius:8px;overflow:hidden}
+.timer div{height:100%;background:var(--gold);transition:width .9s linear}
+.lrow{display:flex;justify-content:space-between;align-items:center;padding:10px 6px;border-bottom:1px solid rgba(255,255,255,.15);font-weight:700;direction:rtl}
+.ltr{direction:ltr;unicode-bidi:isolate;display:inline-block}
+.lock{opacity:.5}
+footer{text-align:center;font-size:13px;opacity:.75;padding-top:6px}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<script>
+const FA = d => String(d).replace(/\d/g, x => "۰۱۲۳۴۵۶۷۸۹"[x]);
+const EN = s => String(s).replace(/[۰-۹]/g, d => "۰۱۲۳۴۵۶۷۸۹".indexOf(d));
+const rnd = (a, b) => a + Math.floor(Math.random() * (b - a + 1));
+const SHOP = [{i:"🐉",p:0},{i:"🤖",p:50},{i:"🧙",p:80},{i:"👾",p:120},{i:"🦸",p:160},{i:"🦄",p:250}];
+const FOOT = `<footer>ساخته‌شده توسط کیان قادرزاده</footer>`;
+
+const TICK = '<svg width="20" height="20" viewBox="0 0 24 24" style="vertical-align:middle"><circle cx="12" cy="12" r="11" fill="#34d399"/><path d="M6.5 12.5l3.6 3.6L17.5 9" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+let save = {};
+try { save = JSON.parse(localStorage.getItem("zarban") || "{}"); } catch(e) { save = {}; }
+save = Object.assign({name:"", coins:0, xp:0, stars:{}, owned:["🐉"], skin:"🐉", sound:true, music:true, wrong:{}, bossWins:{}, timedBest:0}, save);
+function persist(){ try { localStorage.setItem("zarban", JSON.stringify(save)); } catch(e) {} }
+const level = () => Math.floor(save.xp / 100) + 1;
+const app = document.getElementById("app");
+let G = null; // current game
+let timer = null;
+
+function beep(f, d){
+  if (!save.sound) return;
+  try{
+    const c = beep.c = beep.c || new (window.AudioContext || window.webkitAudioContext)();
+    const o = c.createOscillator(), g = c.createGain();
+    o.frequency.value = f; g.gain.value = .07; o.connect(g); g.connect(c.destination);
+    o.start(); o.stop(c.currentTime + d);
+  }catch(e){}
+}
+function stop(){ clearInterval(timer); timer = null; musicStop(); }
+let mus = null;
+function musicStart(){
+  if (!save.music || mus) return;
+  try{
+    const c = beep.c = beep.c || new (window.AudioContext || window.webkitAudioContext)();
+    const master = c.createGain(); master.gain.value = .12; master.connect(c.destination);
+    const an = c.createAnalyser(); an.fftSize = 256; master.connect(an);
+    const drone = c.createOscillator(); drone.type = "sawtooth"; drone.frequency.value = 55;
+    const lp = c.createBiquadFilter(); lp.type = "lowpass"; lp.frequency.value = 260; lp.Q.value = 4;
+    drone.connect(lp); lp.connect(master); drone.start();
+    const lfo = c.createOscillator(); lfo.frequency.value = .15;
+    const lg = c.createGain(); lg.gain.value = 110; lfo.connect(lg); lg.connect(lp.frequency); lfo.start();
+    const thump = t => { const o = c.createOscillator(), g = c.createGain(); o.frequency.value = 60; g.gain.setValueAtTime(.6, t); g.gain.exponentialRampToValueAtTime(.001, t + .25); o.connect(g); g.connect(master); o.start(t); o.stop(t + .3); };
+    const stab = t => [311, 330].forEach(f => { const o = c.createOscillator(), g = c.createGain(); o.type = "square"; o.frequency.value = f; g.gain.setValueAtTime(.12, t); g.gain.exponentialRampToValueAtTime(.001, t + .6); o.connect(g); g.connect(master); o.start(t); o.stop(t + .65); });
+    let step = 0;
+    const iv = setInterval(() => {
+      const t = c.currentTime + .05; step++;
+      thump(t); thump(t + .35);
+      if (step % 4 === 0) stab(t + .7);
+    }, 1400);
+    const creep = t => { const o = c.createOscillator(), g = c.createGain(); o.type = "sine"; o.frequency.setValueAtTime(1400, t); o.frequency.exponentialRampToValueAtTime(260, t + 1.8); g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(.05, t + .4); g.gain.linearRampToValueAtTime(0, t + 2); o.connect(g); g.connect(master); o.start(t); o.stop(t + 2.1); };
+    const iv2 = setInterval(() => creep(c.currentTime + .05), 11000);
+    mus = { c, drone, lfo, iv, iv2, an };
+  }catch(e){ mus = null; }
+}
+function musicStop(){
+  if (!mus) return;
+  clearInterval(mus.iv); clearInterval(mus.iv2);
+  try{ mus.drone.stop(); mus.lfo.stop(); }catch(e){}
+  mus = null;
+}
+function header(){
+  return `<div class="card bar"><span>بازیکن: ${esc(save.name) || "ناشناس"}</span><span>سطح ${FA(level())}</span><span>🪙 ${FA(save.coins)}</span></div>`;
+}
+function exitBtn(){ return `<button class="ghost" onclick="home()">🚪 خروج</button>`; }
+
+function home(){
+  stop(); G = null;
+  app.innerHTML = `
+    <div class="logo">ضربان شو</div>
+    ${header()}
+    <div class="card">
+      <input id="nm" placeholder="نام خود را وارد کنید" value="${esc(save.name)}" maxlength="20">
+      <div style="height:8px"></div>
+      <button class="ghost" style="width:100%" onclick="saveName()">ذخیرهٔ نام</button>
+    </div>
+    <button onclick="startGame('quiz',0)">▶ شروع سریع (ترکیبی)</button>
+    <div class="row2">
+      <button class="alt" onclick="map()">🗺 نقشهٔ مراحل</button>
+      <button class="alt" onclick="learn()">📘 یادگیری</button>
+      <button class="alt" onclick="startGame('timed',0)">⏱ چالش زمانی</button>
+      <button class="alt" onclick="duelSetup()">⚔ دوئل</button>
+      <button onclick="shop()">🛒 فروشگاه</button>
+      <button onclick="settings()">⚙ تنظیمات</button>
+    </div>
+    ${FOOT}`;
+}
+function saveName(){ save.name = document.getElementById("nm").value.trim(); persist(); home(); }
+
+function map(){
+  stop(); G = null;
+  let rows = "";
+  for (let i = 1; i <= 12; i++){
+    const s = save.stars[i] || 0;
+    const open = i === 1 || (save.stars[i-1] || 0) >= 1;
+    const boss = s >= 1;
+    rows += `<div class="lrow ${open ? "" : "lock"}">
+      <div>مرحله ${FA(i)}<div class="stars">${"★".repeat(s)}${"☆".repeat(3-s)}</div></div>
+      <div style="display:flex;gap:6px">
+        <button ${open ? "" : "disabled"} onclick="startGame('quiz',${i})" style="padding:8px 12px;font-size:14px">تمرین</button>
+        <button class="red" ${boss ? "" : "disabled"} onclick="startGame('boss',${i})" style="padding:8px 12px;font-size:14px">رئیس</button>
+      </div></div>`;
+  }
+  app.innerHTML = `${header()}<div class="card"><div style="font-weight:900;font-size:20px;margin-bottom:6px">نقشهٔ مراحل</div>
+    <div style="font-size:13px;opacity:.8;margin-bottom:6px">هر مرحله با ۱ ستاره باز می‌شود. رئیس مرحله را با ۴ پاسخ درست از ۵ شکست بده.</div>${rows}</div>
+    ${exitBtn()}${FOOT}`;
+}
+
+function learn(){
+  stop(); G = null;
+  app.innerHTML = `${header()}
+    <div class="card"><div style="font-weight:700;margin-bottom:8px">جدول ضرب را انتخاب کنید</div>
+    <div class="grid">${Array.from({length:12},(_,i)=>`<button class="alt" onclick="showTable(${i+1})">${FA(i+1)}</button>`).join("")}</div></div>
+    <div id="tbl" class="card" style="min-height:100px;text-align:center;opacity:.8">یک جدول را انتخاب کنید.</div>
+    ${exitBtn()}${FOOT}`;
+}
+function showTable(n){
+  let h = "";
+  for (let i = 1; i <= 10; i++) h += `<div class="lrow"><span class="ltr">${FA(n)} × ${FA(i)} = ${FA(n*i)}</span></div>`;
+  const el = document.getElementById("tbl");
+  el.style.opacity = 1; el.style.textAlign = "right";
+  el.innerHTML = `<div style="font-size:22px;font-weight:900;color:var(--gold);margin-bottom:6px">جدول ${FA(n)}</div>${h}`;
+}
+
+// adaptive question: 50% of the time, replay a pair the player has missed
+function makeQ(table){
+  let a, b;
+  const keys = Object.keys(save.wrong).filter(k => save.wrong[k] > 0 && (!table || k.split("x").map(Number).includes(table)));
+  if (keys.length && Math.random() < .5){
+    [a, b] = keys[rnd(0, keys.length - 1)].split("x").map(Number);
+  } else {
+    a = table || rnd(1, 12); b = rnd(1, 12);
+  }
+  const c = a * b, opts = new Set([c]);
+  while (opts.size < 4){ const d = c + rnd(-6, 6); if (d > 0 && d !== c) opts.add(d); }
+  return { a, b, c, opts: [...opts].sort(() => Math.random() - .5) };
+}
+const pairKey = (a, b) => Math.min(a, b) + "x" + Math.max(a, b);
+
+function startGame(mode, table){
+  stop(); musicStart();
+  G = { mode, table, n: 0, total: mode === "boss" ? 5 : 10, right: 0, left: 60, id: Math.random() };
+  if (mode === "timed"){
+    G.total = Infinity;
+    timer = setInterval(() => {
+      G.left--;
+      const b = document.getElementById("tbar"), t = document.getElementById("tl");
+      if (b) b.style.width = (G.left / 60 * 100) + "%";
+      if (t) t.textContent = FA(G.left);
+      if (G.left <= 0){ stop(); finish(); }
+    }, 1000);
+  }
+  nextQ();
+}
+function nextQ(){
+  if (G.n >= G.total) return finish();
+  G.n++; G.cur = makeQ(G.table); G.t0 = Date.now(); G.done = false;
+  renderGame();
+}
+function renderGame(){
+  const q = G.cur;
+  const title = G.mode === "boss" ? `👹 نبرد با رئیس مرحله ${FA(G.table)}` : G.mode === "timed" ? "⏱ چالش زمانی" : `مرحله ${FA(G.table || "ترکیبی")}`;
+  const prog = G.mode === "timed"
+    ? `<div class="bar"><span>⏱ <b id="tl">${FA(G.left)}</b> ثانیه</span><span>${TICK} ${FA(G.right)}</span></div><div class="timer"><div id="tbar" style="width:${G.left/60*100}%"></div></div>`
+    : `<div class="bar"><span>سؤال ${FA(G.n)} از ${FA(G.total)}</span><span>${TICK} ${FA(G.right)}</span></div>`;
+  app.innerHTML = `${header()}
+    <div class="card" style="font-weight:900;text-align:center">${title}</div>
+    <div class="card">
+      ${prog}
+      <div style="height:10px"></div>
+      <div class="mascot" id="m">${save.skin}</div>
+      <div class="q">${FA(q.a)} × ${FA(q.b)} = ؟</div>
+      <div class="ans">${q.opts.map(o => `<button data-v="${o}" onclick="answer(${o})">${FA(o)}</button>`).join("")}</div>
+      <div class="fb" id="fb"></div>
+    </div>
+    ${exitBtn()}${FOOT}`;
+}
+function answer(v){
+  if (!G || G.done) return;
+  G.done = true;
+  const id = G.id;
+  const q = G.cur, ok = v === q.c, key = pairKey(q.a, q.b);
+  const m = document.getElementById("m"), fb = document.getElementById("fb");
+  app.querySelectorAll(".ans button").forEach(b => {
+    b.disabled = true;
+    if (+b.dataset.v === q.c) b.classList.add("ok");
+  });
+  if (ok){
+    G.right++;
+    const quick = Date.now() - G.t0 < 4000;
+    save.coins += 10; save.xp += quick ? 15 : 10;
+    if (save.wrong[key]) save.wrong[key] = Math.max(0, save.wrong[key] - 1);
+    m.classList.add("win"); beep(880, .15);
+    fb.style.color = "var(--ok)";
+    fb.innerHTML = TICK + " " + praise(quick);
+  } else {
+    save.wrong[key] = (save.wrong[key] || 0) + 1;
+    app.querySelectorAll(".ans button").forEach(b => { if (+b.dataset.v === v) b.classList.add("bad"); });
+    m.classList.add("lose"); beep(220, .25);
+    fb.style.color = "var(--bad)";
+    fb.textContent = `نزدیک بود! جواب درست: ${FA(q.c)}  (${FA(q.a)} × ${FA(q.b)}) — دفعهٔ بعد حتماً می‌گیری 💪`;
+  }
+  persist();
+  setTimeout(() => {
+    if (!G || G.id !== id) return;
+    G.mode === "timed" ? nextQ() : nextQ();
+  }, G.mode === "timed" ? 700 : 1100);
+}
+const PRAISE = ["آفرین قهرمان!", "عالی بود!", "درخشیدی! ✨", "تو نابغه‌ای!", "دقیقاً همین!", "فوق‌العاده!", "بی‌نظیر!", "ریاضی‌دان کوچک!"];
+const praise = q => PRAISE[rnd(0, PRAISE.length - 1)] + (q ? " ⚡ سریع!" : "");
+function celebrate(){
+  const cv = document.createElement("canvas");
+  cv.style.cssText = "position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:99";
+  document.body.appendChild(cv);
+  const W = cv.width = innerWidth, H = cv.height = innerHeight, x = cv.getContext("2d");
+  const cols = ["#ffc83d", "#3aa8ff", "#f472b6", "#34d399", "#a78bfa", "#ffffff"];
+  const P = [];
+  for (let i = 0; i < 160; i++) P.push({k: "c", x: W / 2, y: H / 2, vx: (Math.random() - .5) * 16, vy: -Math.random() * 18 - 4, s: Math.random() * 6 + 3, r: Math.random() * 6, vr: (Math.random() - .5) * .4, c: cols[i % cols.length]});
+  for (let i = 0; i < 40; i++){ const a = Math.random() * Math.PI * 2, sp = Math.random() * 9 + 3; P.push({k: "s", x: W / 2, y: H * .4, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp, s: Math.random() * 10 + 6, c: "#fff7c2", l: 1, d: Math.random() * 15}); }
+  const rings = [];
+  let f = 0; const MAX = 180;
+  (function frame(){
+    f++;
+    x.clearRect(0, 0, W, H);
+    x.save(); x.globalCompositeOperation = "lighter";
+    for (let i = 0; i < 8; i++){
+      const a = f * .02 + i * Math.PI / 4;
+      x.beginPath(); x.moveTo(W / 2, H * .4);
+      x.lineTo(W / 2 + Math.cos(a) * W, H * .4 + Math.sin(a) * W);
+      x.lineTo(W / 2 + Math.cos(a + .12) * W, H * .4 + Math.sin(a + .12) * W);
+      x.closePath(); x.fillStyle = `rgba(255,200,61,${.10 * (1 - f / MAX)})`; x.fill();
+    }
+    x.restore();
+    if (f % 25 === 1) rings.push({r: 10, a: 1});
+    rings.forEach(r => { r.r += 9; r.a -= .02; x.beginPath(); x.arc(W / 2, H * .4, r.r, 0, 7); x.strokeStyle = `rgba(255,215,100,${Math.max(0, r.a)})`; x.lineWidth = 4; x.stroke(); });
+    P.forEach(p => {
+      p.x += p.vx; p.y += p.vy; p.vy += .35; p.vx *= .99;
+      if (p.k === "c"){ p.r += p.vr; x.save(); x.translate(p.x, p.y); x.rotate(p.r); x.fillStyle = p.c; x.fillRect(-p.s / 2, -p.s / 4, p.s, p.s / 2); x.restore(); }
+      else { p.l -= .02; if (p.l > 0 && f > p.d){ x.save(); x.globalAlpha = p.l; x.fillStyle = p.c; x.font = `${p.s * 2}px sans-serif`; x.textAlign = "center"; x.fillText("★", p.x, p.y); x.restore(); } }
+    });
+    if (f < MAX) requestAnimationFrame(frame); else cv.remove();
+  })();
+}
+function finish(){
+  if (!G) return;
+  const g = G; G = null; stop();
+  const total = g.mode === "timed" ? Math.max(1, g.n - (g.done ? 0 : 1)) : g.total;
+  const pct = total ? Math.round(g.right / total * 100) : 0;
+  let stars = pct >= 90 ? 3 : pct >= 70 ? 2 : pct >= 40 ? 1 : 0;
+  let headline = "🎉 مرحله تمام شد! آفرین", win = pct >= 40, extra = "";
+  if (g.mode === "quiz" && g.table){
+    save.stars[g.table] = Math.max(save.stars[g.table] || 0, stars);
+  } else if (g.mode === "boss"){
+    win = g.right >= 4;
+    headline = win ? "پیروز شدی! رئیس شکست خورد 🎉" : "نزدیک بود! یک بار دیگر تلاش کن، تو می‌توانی 💪";
+    if (win){ stars = 3; save.stars[g.table] = 3; if (!save.bossWins[g.table]){ save.bossWins[g.table] = 1; save.coins += 50; } extra = "<br>جایزهٔ رئیس: ۵۰ سکه"; }
+    stars = win ? 3 : 0;
+  } else if (g.mode === "timed"){
+    headline = "چالش تمام شد، عالی تلاش کردی! 👏";
+    if (g.right > save.timedBest){ save.timedBest = g.right; extra = "<br>رکورد جدید!"; }
+    stars = g.right >= 20 ? 3 : g.right >= 12 ? 2 : g.right >= 5 ? 1 : 0;
+    win = stars > 0;
+  }
+  persist();
+  if (win) setTimeout(celebrate, 60);
+  app.innerHTML = `${header()}
+    <div class="card" style="text-align:center">
+      <div class="mascot ${win ? "win" : "lose"}">${win ? "🏆" : "😢"}</div>
+      <div style="font-size:24px;font-weight:900;color:var(--gold);margin-top:10px">${headline}</div>
+      <div class="stars" style="font-size:34px;margin:10px 0">${"★".repeat(stars)}${"☆".repeat(3-stars)}</div>
+      <div style="font-size:18px;line-height:2">پاسخ درست: ${FA(g.right)} از ${FA(total)}<br>درصد موفقیت: ${FA(pct)}٪${extra}</div>
+    </div>
+    <div class="row2">
+      <button onclick="startGame('${g.mode}',${g.table})">🔁 دوباره</button>
+      <button class="alt" onclick="map()">🗺 نقشه</button>
+    </div>
+    ${exitBtn()}${FOOT}`;
+}
+
+function duelSetup(){
+  stop(); G = null;
+  app.innerHTML = `${header()}
+    <div class="card"><div style="font-weight:900;font-size:20px;margin-bottom:8px">⚔ دوئل روی یک دستگاه</div>
+    <input id="p1" placeholder="نام بازیکن اول" value="${save.name}" maxlength="15" style="margin-bottom:8px">
+    <input id="p2" placeholder="نام بازیکن دوم" maxlength="15"></div>
+    <button onclick="duelStart()">شروع دوئل (۵ دور)</button>${exitBtn()}${FOOT}`;
+}
+function duelStart(){
+  const p1 = document.getElementById("p1").value.trim() || "بازیکن ۱";
+  const p2 = document.getElementById("p2").value.trim() || "بازیکن ۲";
+  musicStart();
+  G = { mode: "duel", id: Math.random(), names: [p1, p2], scores: [0, 0], turn: 0, round: 1, rounds: 5 };
+  duelTurn();
+}
+function duelTurn(){
+  G.cur = makeQ(0); G.done = false;
+  const nm = esc(G.names[G.turn]);
+  app.innerHTML = `${header()}
+    <div class="card bar"><span>دور ${FA(G.round)} از ${FA(G.rounds)}</span><span>${esc(G.names[0])}: ${FA(G.scores[0])} | ${esc(G.names[1])}: ${FA(G.scores[1])}</span></div>
+    <div class="card">
+      <div style="text-align:center;font-weight:900;color:var(--gold)">نوبت: ${nm}</div>
+      <div class="mascot" style="margin-top:10px">${G.turn ? "🤖" : "🐉"}</div>
+      <div class="q">${FA(G.cur.a)} × ${FA(G.cur.b)} = ؟</div>
+      <div class="ans">${G.cur.opts.map(o => `<button data-v="${o}" onclick="duelAnswer(${o})">${FA(o)}</button>`).join("")}</div>
+      <div class="fb" id="fb"></div>
+    </div>${exitBtn()}${FOOT}`;
+}
+function duelAnswer(v){
+  if (!G || G.done) return;
+  G.done = true;
+  const id = G.id;
+  const ok = v === G.cur.c;
+  if (ok) G.scores[G.turn]++;
+  app.querySelectorAll(".ans button").forEach(b => { b.disabled = true; if (+b.dataset.v === G.cur.c) b.classList.add("ok"); });
+  if (!ok) app.querySelector(`[data-v="${v}"]`).classList.add("bad");
+  beep(ok ? 880 : 220, .2);
+  const fb = document.getElementById("fb");
+  fb.style.color = ok ? "var(--ok)" : "var(--bad)";
+  fb.innerHTML = ok ? TICK + " درست!" : "اشتباه، جواب: " + FA(G.cur.c);
+  setTimeout(() => {
+    if (!G || G.id !== id) return;
+    if (G.turn === 0){ G.turn = 1; }
+    else { G.turn = 0; G.round++; }
+    if (G.round > G.rounds) return duelEnd();
+    duelTurn();
+  }, 1200);
+}
+function duelEnd(){
+  const [a, b] = G.scores, [n1, n2] = G.names.map(esc);
+  const res = a === b ? "مساوی شدید! 🤝" : `برنده: ${a > b ? n1 : n2} 🏆`;
+  G = null;
+  app.innerHTML = `${header()}
+    <div class="card" style="text-align:center"><div class="mascot win">🏆</div>
+    <div style="font-size:24px;font-weight:900;color:var(--gold);margin-top:10px">${res}</div>
+    <div style="font-size:18px;line-height:2">${n1}: ${FA(a)}  —  ${n2}: ${FA(b)}</div></div>
+    <div class="row2"><button onclick="duelSetup()">🔁 دوئل دوباره</button><button class="alt" onclick="home()">🏠 صفحهٔ اصلی</button></div>${FOOT}`;
+}
+
+function shop(){
+  stop(); G = null;
+  let rows = SHOP.map(s => {
+    const own = save.owned.includes(s.i), eq = save.skin === s.i;
+    const btn = eq ? `<button disabled>✔ انتخاب شده</button>`
+      : own ? `<button class="alt" onclick="equip('${s.i}')">انتخاب</button>`
+      : `<button onclick="buy('${s.i}',${s.p})" ${save.coins >= s.p ? "" : "disabled"}>${FA(s.p)} 🪙</button>`;
+    return `<div class="lrow"><span style="font-size:36px">${s.i}</span>${btn}</div>`;
+  }).join("");
+  app.innerHTML = `${header()}<div class="card"><div style="font-weight:900;font-size:20px;margin-bottom:6px">فروشگاه شخصیت‌ها</div>${rows}</div>${exitBtn()}${FOOT}`;
+}
+function buy(i, p){ if (save.coins < p) return; save.coins -= p; save.owned.push(i); save.skin = i; persist(); shop(); }
+function equip(i){ save.skin = i; persist(); shop(); }
+
+function settings(){
+  stop(); G = null;
+  app.innerHTML = `${header()}
+    <div class="card">
+      <div class="lrow"><span>صدا (افکت)</span><button class="${save.sound ? "alt" : ""}" onclick="toggleSound()">${save.sound ? "روشن" : "خاموش"}</button></div>
+      <div class="lrow"><span>موسیقی جنایی</span><button class="${save.music ? "alt" : ""}" onclick="toggleMusic()">${save.music ? "روشن" : "خاموش"}</button></div>
+      <div class="lrow"><span>پاک کردن پیشرفت</span><button class="red" onclick="resetAll()">پاک کردن</button></div>
+    </div>${exitBtn()}${FOOT}`;
+}
+function toggleSound(){ save.sound = !save.sound; persist(); settings(); }
+function toggleMusic(){ save.music = !save.music; persist(); settings(); }
+function resetAll(){
+  if (!confirm("همهٔ پیشرفت پاک شود؟")) return;
+  save = {name: save.name, coins:0, xp:0, stars:{}, owned:["🐉"], skin:"🐉", sound:save.sound, music:save.music, wrong:{}, bossWins:{}, timedBest:0};
+  persist(); home();
+}
+
+function fix3D(root){
+  return vizInit(root);
+}
+function vizInit(root){
+  root.querySelectorAll(".mascot:not([data-3d])").forEach(m => {
+    m.dataset["3d"] = 1;
+    m.innerHTML = '<canvas class="viz" width="300" height="110"></canvas>';
+  });
+}
+function legacy3D(root){
+  root.querySelectorAll(".mascot:not([data-3d])").forEach(m => {
+    const e = m.textContent.trim();
+    m.dataset["3d"] = 1;
+    m.innerHTML = `<div class="cube">${[e,"🔍","🕵️","🔦"].map(f => `<div class="f">${f}</div>`).join("")}</div>`;
+  });
+}
+new MutationObserver(() => fix3D(app)).observe(app, {childList: true, subtree: true});
+function drawViz(){
+  requestAnimationFrame(drawViz);
+  const data = mus ? new Uint8Array(mus.an.fftSize) : null;
+  if (data) mus.an.getByteTimeDomainData(data);
+  document.querySelectorAll("canvas.viz").forEach(cv => {
+    const x = cv.getContext("2d"), W = cv.width, H = cv.height, N = 24;
+    x.clearRect(0, 0, W, H);
+    if (!cv._s) cv._s = new Array(N).fill(.05);
+    const bw = W / N;
+    for (let i = 0; i < N; i++){
+      let t = .05;
+      if (data){ const d = data[Math.floor(i * data.length / N)]; t = Math.min(1, Math.abs(d - 128) / 128 * 3 + .05); }
+      cv._s[i] = cv._s[i] * .7 + t * .3;
+      const h = cv._s[i] * H;
+      x.fillStyle = `hsl(${40 + i}, 90%, ${50 + cv._s[i] * 20}%)`;
+      x.fillRect(i * bw + 2, (H - h) / 2, bw - 4, h);
+    }
+  });
+}
+drawViz();
+home();
+</script>
+</body>
+</html>

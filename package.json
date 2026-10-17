@@ -1,0 +1,14 @@
+{
+  "name": "zarban-show-android",
+  "version": "1.0.0",
+  "private": true,
+  "description": "ضربان شو - بازی جدول ضرب (سازنده: کیان قادرزاده)",
+  "scripts": { "setup": "npm install && npx cap add android && npx cap sync android" },
+  "dependencies": {
+    "@capacitor/core": "^6.0.0",
+    "@capacitor/android": "^6.0.0"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "^6.0.0"
+  }
+}
