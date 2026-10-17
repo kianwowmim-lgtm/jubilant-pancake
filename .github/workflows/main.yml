@@ -20,5 +20,12 @@ jobs:
     - name: Setup Node.js
       uses: actions/setup-node@v4
       with:
-        node-version: '24'
+        node-version: '20'
+
+    # اگر پروژه شما خروجی یا فایلی برای ذخیره دارد، اینجا مشخص می‌شود
+    - name: Upload Workspace Files
+      uses: actions/upload-artifact@v4
+      with:
+        name: my-project-files
+        path: .
         
