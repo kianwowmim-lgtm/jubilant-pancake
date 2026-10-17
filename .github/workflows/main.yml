@@ -21,4 +21,15 @@ jobs:
       uses: actions/setup-node@v4
       with:
         node-version: '20'
+
+    # در این قسمت باید دستورات بیلد پروژه خود را بگذارید (مثلاً برای گریدل یا ریکت نیتیو)
+    - name: Build with Gradle
+      run: ./gradlew assembleDebug
+      
+    # ذخیره کردن فایل APK به عنوان خروجی (Artifact)
+    - name: Upload APK
+      uses: actions/upload-artifact@v4
+      with:
+        name: app-debug
+        path: app/build/outputs/apk/debug/app-debug.apk
         
